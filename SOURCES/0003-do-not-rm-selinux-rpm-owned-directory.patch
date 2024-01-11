@@ -1,0 +1,28 @@
+kpatch: do not rm selinux rpm owned directory
+
+As part of the kpatch rpm package installation, the /var/lib/kpatch directory
+gets created and is set to be selinux owned by the kpatch rpm package.
+
+There is a problem where uninstalling the last kpatch-patch will also remove
+this directory. When another kpatch-patch installation occurs, the
+/var/lib/kpatch get recreated but withtout the selinux context which triggers a
+policy error.
+
+Since /var/lib/kpatch is now created by the rpm spec file, do not remove it
+from the uinstall target of the kpatch script. This insures selinux context
+consistency.
+
+RHEL-only.
+
+Signed-off-by: Yannick Cote <ycote@redhat.com>
+diff -Nupr kpatch-0.9.4.old/kpatch/kpatch kpatch-0.9.4/kpatch/kpatch
+--- kpatch-0.9.4.old/kpatch/kpatch	2021-08-26 15:31:07.000000000 -0400
++++ kpatch-0.9.4/kpatch/kpatch	2022-06-10 12:19:55.791538218 -0400
+@@ -584,7 +584,6 @@ case "$1" in
+ 	echo "uninstalling $PATCH ($KVER)"
+ 	rm -f "$MODULE" || die "failed to uninstall module $PATCH"
+ 	rmdir --ignore-fail-on-non-empty "$INSTALLDIR/$KVER" || die "failed to remove directory $INSTALLDIR/$KVER"
+-	rmdir --ignore-fail-on-non-empty "$INSTALLDIR" || die "failed to remove directory $INSTALLDIR"
+ 
+ 	;;
+ 
