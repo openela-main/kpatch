@@ -1,0 +1,46 @@
+From f056d60fb309896a52882fd3fc10fb5305f5a47e Mon Sep 17 00:00:00 2001
+From: Joe Lawrence <joe.lawrence@redhat.com>
+Date: Thu, 21 Jun 2018 15:40:20 -0400
+Subject: [PATCH] contrib: disable upstart kpatch.conf install
+
+Do not install the upstart configuration file to avoid this rhpkg
+build complaint:
+
+  Checking for unpackaged file(s): /usr/lib/rpm/check-files /builddir/build/BUILDROOT/kpatch-0.6.1-1.el7.noarch
+  error: Installed (but unpackaged) file(s) found:
+     /etc/init/kpatch.conf
+      Installed (but unpackaged) file(s) found:
+     /etc/init/kpatch.conf
+
+We'll need to think of a better way to do this upstream, but for now,
+just skip the unneeded file on RHEL.
+
+Signed-off-by: Joe Lawrence <joe.lawrence@redhat.com>
+---
+ contrib/Makefile | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/contrib/Makefile b/contrib/Makefile
+index 0b0eeeb23a56..e873f27d6eae 100644
+--- a/contrib/Makefile
++++ b/contrib/Makefile
+@@ -6,12 +6,12 @@ install: all
+ 	$(INSTALL) -d $(SYSTEMDDIR)
+ 	$(INSTALL) -m 0644 kpatch.service $(SYSTEMDDIR)
+ 	sed -i 's~PREFIX~$(PREFIX)~' $(SYSTEMDDIR)/kpatch.service
+-	$(INSTALL) -d $(UPSTARTDIR)
+-	$(INSTALL) -m 0644 kpatch.conf $(UPSTARTDIR)
+-	sed -i 's~PREFIX~$(PREFIX)~' $(UPSTARTDIR)/kpatch.conf
++#	$(INSTALL) -d $(UPSTARTDIR)
++#	$(INSTALL) -m 0644 kpatch.conf $(UPSTARTDIR)
++#	sed -i 's~PREFIX~$(PREFIX)~' $(UPSTARTDIR)/kpatch.conf
+ 
+ uninstall:
+ 	$(RM) $(SYSTEMDDIR)/kpatch.service
+-	$(RM) $(UPSTARTDIR)/kpatch.conf
++#	$(RM) $(UPSTARTDIR)/kpatch.conf
+ 
+ clean:
+-- 
+1.8.3.1
+

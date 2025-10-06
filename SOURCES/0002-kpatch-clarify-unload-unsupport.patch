@@ -1,0 +1,78 @@
+kpatch: clarify that "kpatch unload" isn't supported
+
+Add a user-prompt to the kpatch unload subcommand and make a similiar
+mention in the manual page.
+
+Provide an undocumented force option so that QE and dev scripts can
+still run unload kpatch modules from scripts.
+
+RHEL-only.
+
+Signed-off-by: Joe Lawrence <joe.lawrence@redhat.com>
+diff -Nupr kpatch-0.6.1.old/kpatch/kpatch kpatch-0.6.1/kpatch/kpatch
+--- kpatch-0.9.2.old/kpatch/kpatch	2019-08-28 10:35:01.191259434 -0400
++++ kpatch-0.9.2/kpatch/kpatch	2019-08-28 16:11:13.067926576 -0400
+@@ -49,8 +49,8 @@ usage () {
+ 	echo >&2
+ 	usage_cmd "load --all" "load all installed patch modules into the running kernel"
+ 	usage_cmd "load <module>" "load patch module into the running kernel"
+-	usage_cmd "unload --all" "unload all patch modules from the running kernel"
+-	usage_cmd "unload <module>" "unload patch module from the running kernel"
++	usage_cmd "unload --all (UNSUPPORTED)" "unload all patch modules from the running kernel"
++	usage_cmd "unload <module> (UNSUPPORTED)" "unload patch module from the running kernel"
+ 	echo >&2
+ 	usage_cmd "info <module>" "show information about a patch module"
+ 	echo >&2
+@@ -71,6 +71,16 @@ die() {
+ 	exit 1
+ }
+ 
++confirm_prompt() {
++	local prompt="$1"
++	local answer
++	while true; do
++		read -rp "$prompt [Y/N] " answer
++		[[ $answer == 'Y' || $answer == 'y' ]] && return 0
++		[[ $answer == 'N' || $answer == 'n' ]] && return 1
++	done
++}
++
+ __find_module () {
+ 	MODULE="$1"
+ 	[[ -f "$MODULE" ]] && return
+@@ -406,6 +416,19 @@ unset MODULE
+ init_sysfs_var
+ 
+ [[ "$#" -lt 1 ]] && usage
++
++# RHEL-specific support options
++case "$1" in
++"force")
++	# For scripting purposes, support "kpatch force unload".
++	# Shift out the "force" to avoid the user-prompt check below.
++	shift
++	;;
++"unload")
++	confirm_prompt "WARNING: Red Hat doesn't support unloading of kpatches, continue anyway?" || exit 1
++	;;
++esac
++
+ case "$1" in
+ "load")
+ 	[[ "$#" -ne 2 ]] && usage
+diff -Nupr kpatch-0.6.1.old/man/kpatch.1 kpatch-0.6.1/man/kpatch.1
+--- kpatch-0.9.2.old/man/kpatch.1	2019-08-28 10:35:01.191259434 -0400
++++ kpatch-0.9.2/man/kpatch.1	2019-08-28 14:51:23.268198897 -0400
+@@ -23,10 +23,10 @@ load --all
+ load <module>
+        load patch module into the running kernel
+ 
+-unload --all
++unload --all (UNSUPPORTED)
+        unload all patch modules from the running kernel
+ 
+-unload <module>
++unload <module> (UNSUPPORTED)
+        unload patch module from the running kernel
+ 
+ info <module>
