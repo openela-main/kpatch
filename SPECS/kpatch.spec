@@ -1,8 +1,8 @@
-%define kpatch_dnf_ver	0.4
+%define kpatch_dnf_ver	0.5
 
 Name:		kpatch
 Version:	0.9.7
-Release:	4%{?dist}
+Release:	5%{?dist}
 Summary:	Dynamic kernel patch manager
 
 Group:		System Environment/Kernel
@@ -94,6 +94,9 @@ echo "To enable automatic kpatch-patch subscription, run:"
 echo -e "\t$ dnf kpatch auto"
 
 %changelog
+* Thu Apr 10 2025 Rado Vrbovsky <rvrbovsk@redhat.com> 0.9.7-5
+- Rebase kpatch DNF plugin with upstream to 0.5 (RHEL-85686)
+
 * Tue Oct 29 2024 Troy Dawson <tdawson@redhat.com> - 0.9.7-4
 - Bump release for October 2024 mass rebuild:
   Resolves: RHEL-64018
