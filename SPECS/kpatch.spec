@@ -1,8 +1,8 @@
 %define kpatch_dnf_ver	0.5
 
 Name:		kpatch
-Version:	0.9.7
-Release:	5%{?dist}
+Version:	0.9.10
+Release:	20%{?dist}
 Summary:	Dynamic kernel patch manager
 
 Group:		System Environment/Kernel
@@ -15,12 +15,13 @@ Source1:	kpatch-dnf-v%{kpatch_dnf_ver}.tar.gz
 Patch0:		0001-contrib-disable-upstart-kpatch.conf-install.patch
 Patch1:		0002-kpatch-clarify-unload-unsupport.patch
 Patch2:		0003-do-not-rm-selinux-rpm-owned-directory.patch
+Patch3:		0004-kpatch-List-CVEs-for-loaded-livepatch-modules.patch
 
 # Upstream backports (inactive -- for future reference)
-#Patch100:	0100-xxx.patch
+# %%Patch100:	0100-xxx.patch
 
 # kpatch-dnf backports (inactive -- for future reference)
-#Patch200:	0200-foo-bar-etcetera.patch
+# %%Patch200:	0200-foo-bar-etcetera.patch
 
 BuildRequires:	make
 
@@ -41,7 +42,7 @@ Summary:	kpatch-patch manager plugin for DNF
 Version:	%{version}_%{kpatch_dnf_ver}
 BuildRequires:	python3-devel python3-dnf
 Requires:	python3-dnf python3-hawkey
-Provides:	kpatch-dnf
+Provides:	kpatch-dnf = %{version}-%{release}
 
 %description -n kpatch-dnf
 kpatch-dnf is a DNF plugin that manages subscription to kpatch-patch updates.
@@ -53,15 +54,16 @@ kpatch-patch packages updates.
 %patch -P 0 -p1
 %patch -P 1 -p1
 %patch -P 2 -p1
+%patch -P 3 -p1
 # Use this to apply upstream patches to kpatch
-#%patch -P 100 -p1
+# %%patch -P 100 -p1
 
-%setup -D -T -a 1
+%setup -D -T -a 1 -q
 
 # Use this to apply patches to kpatch-dnf (inactive)
-#cd kpatch-dnf-%{kpatch_dnf_ver}
-#%patch200 -p1
-#cd ..
+# cd kpatch-dnf-%%{kpatch_dnf_ver}
+# %%patch200 -p1
+# cd ..
 
 %build
 make -C man
@@ -76,6 +78,9 @@ mkdir -p %{buildroot}/%{_sharedstatedir}/kpatch
 rm -f %{buildroot}/usr/share/man/man1/kpatch-build.1.gz
 
 make install PREFIX=/usr DESTDIR=%{buildroot} PYTHONSITES=%{python3_sitelib} -C kpatch-dnf-%{kpatch_dnf_ver}
+
+%check
+# No check available
 
 %files
 %{_sbindir}/kpatch
@@ -94,6 +99,10 @@ echo "To enable automatic kpatch-patch subscription, run:"
 echo -e "\t$ dnf kpatch auto"
 
 %changelog
+* Tue Sep 09 2025 Rado Vrbovsky <rvrbovsk@redhat.com> 0.9.7-20
+- Rebase kpatch with upstream to v0.9.10 (RHEL-113127)
+- Provide a list of CVEs currently patched using live patches (RHEL-106283)
+
 * Thu Apr 10 2025 Rado Vrbovsky <rvrbovsk@redhat.com> 0.9.7-5
 - Rebase kpatch DNF plugin with upstream to 0.5 (RHEL-85686)
 

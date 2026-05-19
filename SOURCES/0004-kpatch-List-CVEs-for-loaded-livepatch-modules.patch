@@ -1,0 +1,101 @@
+From a80d2aa1381b901ec0e1da547b607b66e7bd96a1 Mon Sep 17 00:00:00 2001
+From: Radomir Vrbovsky <rvrbovsk@redhat.com>
+Date: Tue, 9 Sep 2025 21:56:27 +0200
+Subject: [PATCH] kpatch: List CVEs for loaded livepatch modules
+
+JIRA: https://issues.redhat.com/browse/RHEL-113127
+Upstream: RHEL-ONLY
+
+Enhances the list subcommand to display the CVE identifiers addressed
+by each installed patch module.
+
+The CVEs are extracted directly from the RPM changelogs of the corresponding
+modules, giving users clearer insight into the security issues mitigated
+by livepatch updates.
+
+V2:
+* Remove temporary files in favor of associative arrays
+* Use printf and sed for indentation instead of a loop
+
+V3:
+* Syntactic changes using ShellCheck
+
+Signed-off-by: Radomir Vrbovsky <rvrbovsk@redhat.com>
+---
+ kpatch/kpatch | 33 +++++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
+
+diff --git a/kpatch/kpatch b/kpatch/kpatch
+index c16a108..f029b59 100755
+--- a/kpatch/kpatch
++++ b/kpatch/kpatch
+@@ -24,12 +24,15 @@
+ # displaying information about kernel patch modules installed on the system.
+ 
+ INSTALLDIR=/var/lib/kpatch
++RPMINSTALLDIR=/lib/kpatch
+ SCRIPTDIR="$(readlink -f "$(dirname "$(type -p "$0")")")"
+ VERSION="0.9.10"
+ POST_ENABLE_WAIT=15	# seconds
+ POST_SIGNAL_WAIT=60	# seconds
+ MODULE_REF_WAIT=15	# seconds
+ 
++declare -A CVE_LIST
++
+ # How many times to try loading the patch if activeness safety check fails.
+ MAX_LOAD_ATTEMPTS=5
+ # How long to wait before retry, in seconds.
+@@ -446,6 +449,32 @@ get_module_version() {
+ 	MODVER="${MODVER/ */}"
+ }
+ 
++query_module_cves() {
++	local module=$1
++	local rpm_log
++	local cve_list
++
++	[[ -z "$module" ]] && return
++
++	rpm_log=$(rpm -q --changelog "$(rpm -q --whatprovides "$module")")
++	[[ -z "$rpm_log" ]] && return
++
++	cve_list=$(echo "$rpm_log" | grep -oP '.*{\K[^}]+' | grep -o 'CVE[0-9-]\+' | sort -n | uniq)
++
++	CVE_LIST[$MODNAME]=$cve_list
++}
++
++query_cves() {
++	for kdir in "$RPMINSTALLDIR"/*; do
++		[[ -e "$kdir" ]] || continue
++		for module in "$kdir"/*.ko; do
++			[[ -e "$module" ]] || continue
++			mod_name "$module"
++			query_module_cves "$module"
++		done
++	done
++}
++
+ unset MODULE
+ 
+ # Initialize the $SYSFS var.  This only works if the core module has been
+@@ -593,6 +622,7 @@ case "$1" in
+ 
+ "list")
+ 	[[ "$#" -ne 1 ]] && usage
++	query_cves
+ 	echo "Loaded patch modules:"
+ 	for module in "$SYSFS"/*; do
+ 		if [[ -e "$module" ]]; then
+@@ -605,6 +635,9 @@ case "$1" in
+ 							 || state="disabled"
+ 			fi
+ 			echo "$modname [$state]"
++			if [[ -v "CVE_LIST[$MODNAME]" ]]; then
++				printf "%s\n" "${CVE_LIST[$MODNAME]}" | sed 's/^/\t/'
++			fi
+ 		fi
+ 	done
+ 	show_stalled_processes
+-- 
+2.48.1
+
