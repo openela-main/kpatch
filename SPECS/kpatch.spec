@@ -2,7 +2,7 @@
 
 Name:		kpatch
 Version:	0.9.7
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Dynamic kernel patch manager
 
 Group:		System Environment/Kernel
@@ -15,6 +15,7 @@ Source1:	kpatch-dnf-v%{kpatch_dnf_ver}.tar.gz
 Patch0:		0001-contrib-disable-upstart-kpatch.conf-install.patch
 Patch1:		0002-kpatch-clarify-unload-unsupport.patch
 Patch2:		0003-do-not-rm-selinux-rpm-owned-directory.patch
+Patch3:		0004-kpatch-List-CVEs-for-loaded-livepatch-modules.patch
 
 # Upstream backports
 #Patch100:	0100-xxx.patch
@@ -51,6 +52,7 @@ kpatch-patch packages updates.
 %patch0 -p1
 %patch1 -p1
 %patch2 -p1
+%patch3 -p1
 
 %setup -D -T -a 1
 cd kpatch-dnf-%{kpatch_dnf_ver}
@@ -87,6 +89,9 @@ echo "To enable automatic kpatch-patch subscription, run:"
 echo -e "\t$ dnf kpatch auto"
 
 %changelog
+* Tue Aug 04 2026 Rado Vrbovsky <rvrbovsk@redhat.com> 0.9.7-4
+- Provide a list of CVEs currently patched using live patches (RHEL-185842)
+
 * Tue Apr 08 2025 Rado Vrbovsky <rvrbovsk@redhat.com> 0.9.7-3
 - Rebase kpatch DNF plugin with upstream to 0.5 (RHEL-85574)
 
